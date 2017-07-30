@@ -17,9 +17,15 @@ public class Review {
 
     private String profileName;
 
-    private String ;
+    private String helpfulnessNumerator;
 
-    private String id;
+    private String helpfulnessDenominator;
+
+    private String score;
+
+    private String time;
+
+    private String summary;
+
+    private String text;
 }
-
-Id,ProductId,UserId,ProfileName,HelpfulnessNumerator,HelpfulnessDenominator,Score,Time,Summary,Text
