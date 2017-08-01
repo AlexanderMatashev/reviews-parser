@@ -1,16 +1,14 @@
-package com.mannaward.reviews_parser.service.impl;
+package com.mannaward.reviews_parser.task;
 
 import com.mannaward.reviews_parser.model.Review;
-import com.mannaward.reviews_parser.service.Task;
+import com.mannaward.reviews_parser.task.Task;
 
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.stream.Collectors;
 
 
 public class WordsUsageStatisticsTask extends Task {
@@ -22,14 +20,10 @@ public class WordsUsageStatisticsTask extends Task {
     }
 
     @Override
-    public void doTask() {
-        wordCount(getReviews());
-    }
-
-    private void wordCount(Set<Review> reviews) {
+    public void run() {
         long start = Instant.now().toEpochMilli();
         ConcurrentHashMap<String, LongAdder> wordsCounterMap = new ConcurrentHashMap<>();
-        reviews.parallelStream()
+        getReviews().parallelStream()
                 .map(review -> review.getText().split("[\\s-:,()!?.]"))
                 .flatMap(Arrays::stream)
                 .parallel()
@@ -41,15 +35,11 @@ public class WordsUsageStatisticsTask extends Task {
                     wordsCounterMap.get(word).increment();
                 });
 
-        LinkedHashMap result =
-                wordsCounterMap
-                        .entrySet()
-                        .stream()
-                        .sorted(Map.Entry.<String, LongAdder>comparingByValue(getComparator()).reversed())
-                        .limit(1000)
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (x, y) -> x, LinkedHashMap::new));
+        LinkedHashMap result = getOrderedResult(wordsCounterMap, 1000);
+        printResult(result);
 
         long end = Instant.now().toEpochMilli();
         System.out.println(String.format("\tCompleted in %d milliseconds", (end - start)));
     }
+
 }

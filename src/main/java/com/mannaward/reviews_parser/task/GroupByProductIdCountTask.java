@@ -1,16 +1,14 @@
-package com.mannaward.reviews_parser.service.impl;
+package com.mannaward.reviews_parser.task;
 
 
 import com.mannaward.reviews_parser.model.Review;
-import com.mannaward.reviews_parser.service.Task;
+import com.mannaward.reviews_parser.task.Task;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.stream.Collectors;
 
 public class GroupByProductIdCountTask extends Task {
 
@@ -19,7 +17,7 @@ public class GroupByProductIdCountTask extends Task {
     }
 
     @Override
-    public void doTask() {
+    public void run() {
         long start = Instant.now().toEpochMilli();
         ConcurrentHashMap<String, LongAdder> reviewsByProductCounterMap = new ConcurrentHashMap<>();
         getReviews().parallelStream()
@@ -31,13 +29,8 @@ public class GroupByProductIdCountTask extends Task {
                     reviewsByProductCounterMap.get(profileName).increment();
                 });
 
-        LinkedHashMap result =
-                reviewsByProductCounterMap
-                        .entrySet()
-                        .stream()
-                        .sorted(Map.Entry.<String, LongAdder>comparingByValue(getComparator()).reversed())
-                        .limit(1000)
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (x, y) -> x, LinkedHashMap::new));
+        LinkedHashMap result = getOrderedResult(reviewsByProductCounterMap, 1000);
+        printResult(result);
 
         long end = Instant.now().toEpochMilli();
         System.out.println(String.format("\tCompleted in %d milliseconds", (end - start)));
